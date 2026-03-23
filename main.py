@@ -20,32 +20,65 @@ MATCH_COUNT = 3
 class BuscarRequest(BaseModel):
     query: str  # Texto de búsqueda del usuario
 
+def _buscar_vectorial(query: str) -> list[dict]:
+    """Genera embedding y busca en Supabase. Retorna lista de resultados (puede ser vacía)."""
+    embedding_response = openai.embeddings.create(
+        model=EMBEDDING_MODEL,
+        input=query,
+    )
+    vector = embedding_response.data[0].embedding
+    response = supabase.rpc("buscar_kia", {
+        "query_embedding": vector,
+        "match_count": MATCH_COUNT,
+    }).execute()
+    return response.data or []
+
+
+def format_kia_resultados(resultados: list[dict]) -> str:
+    """Formatea resultados KIA como texto plano optimizado para voz (Ultravox)."""
+    if not resultados:
+        return "No encontre modelos que coincidan con tu busqueda."
+    lineas = []
+    for r in resultados:
+        precio = r.get("precio_usd")
+        cuota = r.get("cuota_bancaria")
+        precio_str = f"${precio:,}" if precio else "N/A"
+        cuota_str = f"${cuota}/mes" if cuota else "N/A"
+        lineas.append(f"{r.get('modelo', 'N/A')} - {r.get('detalle_version', '')}")
+        lineas.append(f"  Gama: {r.get('gama', 'N/A')} | Ano: {r.get('año', 'N/A')}")
+        lineas.append(f"  Precio: {precio_str} | Cuota desde: {cuota_str}")
+        lineas.append(f"  Colores: {r.get('colores', 'N/A')}")
+        if r.get("introduccion"):
+            lineas.append(f"  {r['introduccion']}")
+        if r.get("url_pdf"):
+            lineas.append(f"  Ficha tecnica: {r['url_pdf']}")
+        if r.get("url_video"):
+            lineas.append(f"  Video: {r['url_video']}")
+        lineas.append("")
+    return "\n".join(lineas).strip()
+
+
 @app.get("/")
 def root():
     return {"status": "ok", "mensaje": "KIA RAG API funcionando"}
+
 
 @app.post("/buscar")
 def buscar(request: BuscarRequest):
     if not request.query.strip():
         raise HTTPException(status_code=400, detail="La query no puede estar vacía")
-
-    # Generar embedding de la query con OpenAI
-    embedding_response = openai.embeddings.create(
-        model=EMBEDDING_MODEL,
-        input=request.query
-    )
-    vector = embedding_response.data[0].embedding
-
-    # Buscar los más similares en Supabase usando pgvector
-    response = supabase.rpc("buscar_kia", {
-        "query_embedding": vector,
-        "match_count": MATCH_COUNT
-    }).execute()
-
-    if not response.data:
+    resultados = _buscar_vectorial(request.query)
+    if not resultados:
         raise HTTPException(status_code=404, detail="No se encontraron resultados")
+    return {"resultados": resultados}
 
-    return {"resultados": response.data}
+
+@app.post("/buscar_ultravox")
+def buscar_ultravox(request: BuscarRequest):
+    if not request.query.strip():
+        raise HTTPException(status_code=400, detail="La query no puede estar vacía")
+    resultados = _buscar_vectorial(request.query)
+    return {"resultado": format_kia_resultados(resultados)}
 
 if __name__ == "__main__":
     import uvicorn
