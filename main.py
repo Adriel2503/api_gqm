@@ -4,58 +4,45 @@ from supabase import create_client
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
+import logging
 
 load_dotenv()
 
+# Filtrar logs del healthcheck
+class HealthCheckFilter(logging.Filter):
+    def filter(self, record):
+        msg = record.getMessage()
+        return not ("GET / " in msg and "200" in msg)
+
+logging.getLogger("uvicorn.access").addFilter(HealthCheckFilter())
+
 app = FastAPI(title="KIA RAG API")
 
-# Clientes de Supabase y OpenAI
 supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_KEY"))
 openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Modelo de embeddings y cantidad de resultados a devolver
-EMBEDDING_MODEL = "text-embedding-3-large"
-MATCH_COUNT = 3
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+MATCH_COUNT = int(os.getenv("MATCH_COUNT", "3"))
+UMBRAL = float(os.getenv("UMBRAL", "0.5"))
+
 
 class BuscarRequest(BaseModel):
-    query: str  # Texto de búsqueda del usuario
+    query: str
+
 
 def _buscar_vectorial(query: str) -> list[dict]:
-    """Genera embedding y busca en Supabase. Retorna lista de resultados (puede ser vacía)."""
+    """Genera embedding y busca en Supabase. Retorna lista de resultados."""
     embedding_response = openai.embeddings.create(
         model=EMBEDDING_MODEL,
         input=query,
     )
     vector = embedding_response.data[0].embedding
-    response = supabase.rpc("buscar_kia", {
+    response = supabase.rpc("buscar_kia_vehiculos", {
         "query_embedding": vector,
         "match_count": MATCH_COUNT,
+        "umbral": UMBRAL,
     }).execute()
     return response.data or []
-
-
-def format_kia_resultados(resultados: list[dict]) -> str:
-    """Formatea resultados KIA como texto plano optimizado para voz (Ultravox)."""
-    if not resultados:
-        return "No encontre modelos que coincidan con tu busqueda."
-    lineas = []
-    for r in resultados:
-        precio = r.get("precio_usd")
-        cuota = r.get("cuota_bancaria")
-        precio_str = f"${precio:,}" if precio else "N/A"
-        cuota_str = f"${cuota}/mes" if cuota else "N/A"
-        lineas.append(f"{r.get('modelo', 'N/A')} - {r.get('detalle_version', '')}")
-        lineas.append(f"  Gama: {r.get('gama', 'N/A')} | Ano: {r.get('año', 'N/A')}")
-        lineas.append(f"  Precio: {precio_str} | Cuota desde: {cuota_str}")
-        lineas.append(f"  Colores: {r.get('colores', 'N/A')}")
-        if r.get("introduccion"):
-            lineas.append(f"  {r['introduccion']}")
-        if r.get("url_pdf"):
-            lineas.append(f"  Ficha tecnica: {r['url_pdf']}")
-        if r.get("url_video"):
-            lineas.append(f"  Video: {r['url_video']}")
-        lineas.append("")
-    return "\n".join(lineas).strip()
 
 
 @app.get("/")
@@ -72,13 +59,6 @@ def buscar(request: BuscarRequest):
         raise HTTPException(status_code=404, detail="No se encontraron resultados")
     return {"resultados": resultados}
 
-
-@app.post("/buscar_ultravox")
-def buscar_ultravox(request: BuscarRequest):
-    if not request.query.strip():
-        raise HTTPException(status_code=400, detail="La query no puede estar vacía")
-    resultados = _buscar_vectorial(request.query)
-    return {"resultado": format_kia_resultados(resultados)}
 
 if __name__ == "__main__":
     import uvicorn

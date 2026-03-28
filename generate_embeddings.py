@@ -14,7 +14,11 @@ EMBEDDING_MODEL = "text-embedding-3-small"
 
 
 def build_text(row):
-    return f"{row.get('marca', '')} {row.get('modelo', '')}".strip()
+    marca = row.get('marca', '')
+    modelo = row.get('modelo', '')
+    carroceria = row.get('tipo_carroceria', '')
+    descripcion = row.get('descripcion_modelo', '')
+    return f"{marca} {modelo} {carroceria} - {descripcion}".strip()
 
 
 def main():
