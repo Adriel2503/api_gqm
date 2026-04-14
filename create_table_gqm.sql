@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS public.gqm_vehiculos (
   espejos_electricos VARCHAR(10),
   aire_acondicionado VARCHAR(150),
   radio_tactil VARCHAR(20),
-  camara_de_retroceso VARCHAR(30),
+  camara_de_retroceso VARCHAR(60),
   airbags VARCHAR(80),
   sistema_de_frenos VARCHAR(100),
   tipo_de_frenos VARCHAR(100),
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS public.gqm_vehiculos (
   suspension_posteriores VARCHAR(60),
   llanta_de_repuesto VARCHAR(20),
   cargador_inalambrico VARCHAR(10),
-  material_de_asientos VARCHAR(30),
+  material_de_asientos VARCHAR(50),
   maletero_inteligente VARCHAR(10),
 
   -- ADAS (Asistencias de conducción)
