@@ -16,12 +16,8 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
 def build_text(row):
     marca = row.get('marca', '')
     modelo = row.get('modelo', '')
-    carroceria = row.get('tipo_de_carroceria', '')
-    descripcion = row.get('descripcion_del_modelo', '')
-    # Si descripcion es N/A, usar introduccion como fallback
-    if descripcion == 'N/A' or not descripcion:
-        descripcion = row.get('introduccion_de_modelo', '')
-    return f"{marca} {modelo} {carroceria} - {descripcion}".strip()
+    detalle = row.get('detalle_de_version', '')
+    return f"{marca} {modelo} {detalle}".strip()
 
 
 def main():

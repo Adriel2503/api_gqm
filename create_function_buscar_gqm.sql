@@ -85,7 +85,10 @@ RETURNS TABLE (
   traccion VARCHAR,
   monitor_de_punto_ciego VARCHAR,
   asientos_electricos VARCHAR,
-  autonomia_ev VARCHAR
+  autonomia_ev VARCHAR,
+  url_imagen TEXT,
+  url_pdf TEXT,
+  url_video TEXT
 )
 LANGUAGE sql STABLE
 AS $$
@@ -105,7 +108,7 @@ AS $$
     mantenimiento_carril_lka, prevencion_colision_trafico_cruzado_rcca,
     seguimiento_carril_lfa, control_crucero, rieles_en_el_techo,
     freno_de_estacionamiento, numero_de_asientos, traccion, monitor_de_punto_ciego,
-    asientos_electricos, autonomia_ev
+    asientos_electricos, autonomia_ev, url_imagen, url_pdf, url_video
   FROM public.gqm_vehiculos
   WHERE embedding IS NOT NULL
     AND 1 - (embedding <=> query_embedding) >= umbral

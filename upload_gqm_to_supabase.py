@@ -9,7 +9,7 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
 TABLE_NAME = "gqm_vehiculos"
-CSV_FILE = "data/gqm_vehiculos.csv"
+CSV_FILE = "data/gqm_vehiculos_2026_15.csv"
 
 # Mapeo: columna CSV -> columna SQL
 COLUMN_MAP = {
@@ -75,6 +75,9 @@ COLUMN_MAP = {
     "monitor de punto ciego": "monitor_de_punto_ciego",
     "asientos electricos": "asientos_electricos",
     "autonomia (ev)": "autonomia_ev",
+    "url_imagen": "url_imagen",
+    "url_pdf": "url_pdf",
+    "url_video": "url_video",
 }
 
 INT_COLUMNS = {"ano_modelo", "numero_de_asientos"}

@@ -83,5 +83,10 @@ CREATE TABLE IF NOT EXISTS public.gqm_vehiculos (
   asientos_electricos VARCHAR(10),
   autonomia_ev VARCHAR(15),
 
+  -- Recursos multimedia
+  url_imagen TEXT,
+  url_pdf TEXT,
+  url_video TEXT,
+
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
